@@ -2,4 +2,4 @@
 # Ignore directories containing media or documents
 
 media/documents/*.pdf
-media/documents/
+# media/documents/
