@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Search</title>
+    <style>
+        .highlight { background-color: yellow; }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const query = "{{ query|escapejs }}";
+            if (query) {
+                const regEx = new RegExp(`\\b${query}\\b`, 'gi');
+                document.querySelectorAll('.pdf-content').forEach(function(node) {
+                    node.innerHTML = node.innerText.replace(regEx, '<span class="highlight">$&</span>');
+                });
+            }
+        });
+    </script>
+</head>
+<body>
+    <h1>Search for a Word in PDF Content</h1>
+    <form method="get">
+        {{ form.as_p }}
+        <button type="submit">Search</button>
+    </form>
+    
+    <h2>Results:</h2>
+    {% if results %}
+        <ul>
+            {% for result in results %}
+                <li>
+                    <a href="{% url 'pdf_viewer' result.document.pdf_file.name %}?query={{ query|urlencode }}">{{ result.document.pdf_file.name }}</a> - Word Count: {{ result.count }}
+                    <div class="pdf-content" style="display:none;">{{ result.document.content|safe }}</div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No documents found containing your search term.</p>
+    {% endif %}
+</body>
+</html>

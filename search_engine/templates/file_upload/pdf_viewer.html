@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.13.216/pdf.min.js"></script>
+    <style>
+        #pdf-canvas {
+            border: 1px solid black;  /* Ensure the canvas is visible */
+        }
+        .highlight { background-color: yellow; }
+    </style>
+</head>
+<body>
+    <h1>PDF Viewer</h1>
+    <div>Debug URL: {{ pdf_url }}</div>  <!-- Display the PDF URL for debugging -->
+    <canvas id="pdf-canvas"></canvas>
+    <script>
+        const url = '{{ pdf_url }}';
+        const query = '{{ query|escapejs }}';
+
+        var pdfjsLib = window['pdfjs-dist/build/pdf'];
+
+        // Ensure the loading of PDF.worker.js if it's not bundled
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.13.216/pdf.worker.min.js';
+
+        var loadingTask = pdfjsLib.getDocument(url);
+        loadingTask.promise.then(function(pdf) {
+            console.log("PDF loaded");
+            
+            // Fetch the first page
+            var pageNumber = 1;
+            pdf.getPage(pageNumber).then(function(page) {
+                console.log("Page loaded");
+                
+                var scale = 1.5;
+                var viewport = page.getViewport({scale: scale});
+
+                // Prepare canvas using PDF page dimensions
+                var canvas = document.getElementById('pdf-canvas');
+                var context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                // Render PDF page into canvas context
+                var renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                var renderTask = page.render(renderContext);
+                renderTask.promise.then(function () {
+                    console.log("Page rendered");
+                });
+            });
+        }, function (reason) {
+            // PDF loading error
+            console.error(reason);
+        });
+    </script>
+</body>
+</html>
