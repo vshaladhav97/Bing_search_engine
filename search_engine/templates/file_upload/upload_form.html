@@ -1,14 +1,97 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Upload new PDF</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Uploader</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #e7dcd9;
+        font-family: Arial, sans-serif;
+    }
+    .container {
+        background: linear-gradient(to right, #ffffff, #e6e6e6);
+        padding: 40px 50px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        width: 400px;
+        box-sizing: border-box;
+    }
+    h1 {
+        font-size: 24px;
+        color: #333;
+        margin-bottom: 20px;
+    }
+    form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    input[type="file"] {
+        border: 2px dashed #aaa;
+        padding: 12px;
+        width: 100%;
+        border-radius: 5px;
+        text-align: center;
+        cursor: pointer;
+        outline: none;
+    }
+    #file-label {
+        margin-top: 10px;
+        color: #666;
+    }
+    button {
+        background-color: #007BFF;
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        font-size: 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s, transform 0.2s;
+    }
+    button:hover {
+        background-color: #0056b3;
+        transform: scale(1.05);
+    }
+    #loading {
+        display: none;
+        margin-top: 10px;
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.querySelector('input[type="file"]');
+        const fileLabel = document.getElementById('file-label');
+        const form = document.querySelector('form');
+        
+        fileInput.addEventListener('change', function() {
+            const fileCount = this.files.length;
+            fileLabel.textContent = fileCount > 0 ? fileCount + ' files selected' : 'No files chosen';
+        });
+
+        form.addEventListener('submit', function() {
+            document.getElementById('loading').style.display = 'block';
+            document.querySelector('button[type="submit"]').disabled = true;
+        });
+    });
+</script>
 </head>
 <body>
-    <h1>Upload new PDF</h1>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Upload PDF</button>
-    </form>
+    <div class="container">
+        <h1>File Uploader</h1>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <span id="file-label">No files chosen</span>
+            <button type="submit">Upload</button>
+            <div id="loading"><img src='loading.gif' alt="Uploading..."></div>
+        </form>
+    </div>
 </body>
 </html>

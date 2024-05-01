@@ -3,26 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Viewer</title>
+    <title>PDF Viewer with Search Highlight</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.13.216/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.13.216/pdf.worker.min.js"></script>
     <style>
         #pdf-canvas {
-            border: 1px solid black;  /* Ensure the canvas is visible */
+            border: 1px solid black; /* Ensure the canvas is visible */
         }
         .highlight { background-color: yellow; }
+        button[type="submit"], #add-term-btn {
+            padding: 8px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+        button[type="submit"]:hover, #add-term-btn:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
     <h1>PDF Viewer</h1>
-    <div>Debug URL: {{ pdf_url }}</div>  <!-- Display the PDF URL for debugging -->
+    <a href="/" id="add-term-btn" class="home-button">Home Page</a>
+    <div>PDF URL: {{ pdf_url }}</div> <!-- Display the PDF URL for debugging -->
     <canvas id="pdf-canvas"></canvas>
     <script>
         const url = '{{ pdf_url }}';
-        const query = '{{ query|escapejs }}';
+        const query = '{{ query|escapejs }}'.toLowerCase();
 
         var pdfjsLib = window['pdfjs-dist/build/pdf'];
-
-        // Ensure the loading of PDF.worker.js if it's not bundled
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.13.216/pdf.worker.min.js';
 
         var loadingTask = pdfjsLib.getDocument(url);
@@ -51,6 +63,20 @@
                 var renderTask = page.render(renderContext);
                 renderTask.promise.then(function () {
                     console.log("Page rendered");
+                    return page.getTextContent();
+                }).then(function(textContent) {
+                    textContent.items.forEach(function(item) {
+                        const termRegex = new RegExp("\\b" + query + "\\b", "gi"); // Use regex to match whole word
+                        if (item.str.toLowerCase().match(termRegex)) {
+                            const tm = item.transform;
+                            const x = tm[4] * scale;
+                            const y = (canvas.height - tm[5] * scale) - (tm[0] * scale);
+                            const textWidth = context.measureText(query).width * scale; // Correct width calculation for the search term
+
+                            context.fillStyle = "rgba(255, 255, 0, 0.5)"; // Lighter highlight color
+                            context.fillRect(x, y, textWidth, tm[0] * scale); // Correctly positioned highlight
+                        }
+                    });
                 });
             });
         }, function (reason) {

@@ -5,39 +5,115 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document Search</title>
     <style>
-        .highlight { background-color: yellow; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e7dcd9;
+        }
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 40px 50px;
+            border-radius: 10px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        form {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .search-input {
+            padding: 8px;
+            width: 60%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        button[type="submit"], #add-term-btn {
+            padding: 8px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+        button[type="submit"]:hover, #add-term-btn:hover {
+            background-color: #45a049;
+        }
+        .pdf-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .pdf-item {
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .pdf-link {
+            text-decoration: none;
+            color: #333;
+        }
+        .highlight {
+            background-color: yellow;
+        }
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const query = "{{ query|escapejs }}";
-            if (query) {
-                const regEx = new RegExp(`\\b${query}\\b`, 'gi');
-                document.querySelectorAll('.pdf-content').forEach(function(node) {
-                    node.innerHTML = node.innerText.replace(regEx, '<span class="highlight">$&</span>');
-                });
-            }
+            const addButton = document.getElementById('add-term-btn');
+            const termsContainer = document.getElementById('terms-container');
+
+            addButton.addEventListener('click', function () {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'search-input';
+                input.placeholder = 'Enter term';
+                input.name = 'query'; // Set unique name for each input field
+                termsContainer.appendChild(input);
+            });
         });
     </script>
 </head>
 <body>
-    <h1>Search for a Word in PDF Content</h1>
-    <form method="get">
-        {{ form.as_p }}
-        <button type="submit">Search</button>
-    </form>
-    
-    <h2>Results:</h2>
-    {% if results %}
-        <ul>
-            {% for result in results %}
-                <li>
-                    <a href="{% url 'pdf_viewer' result.document.pdf_file.name %}?query={{ query|urlencode }}">{{ result.document.pdf_file.name }}</a> - Word Count: {{ result.count }}
-                    <div class="pdf-content" style="display:none;">{{ result.document.content|safe }}</div>
-                </li>
+    <div class="container">
+        <a href="/" id="add-term-btn" class="home-button">Home Page</a>
+        <h1>Search for Words in PDF Content</h1>
+        <form method="get">
+            <div id="terms-container">
+                {% for term in query %}
+                <input type="text" name="query" class="search-input" placeholder="Enter term" value="{{ term }}">
+                {% endfor %}
+            </div>
+            <button type="button" id="add-term-btn">Add Term</button>
+            <button type="submit">Search</button>
+        </form>
+        
+        <h2>Results:</h2>
+        {% if results %}
+            {% for term_result in results %}
+                <h3>Results for "{{ term_result.term }}":</h3>
+                {% if term_result.results %}
+                    <ul class="pdf-list">
+                        {% for result in term_result.results %}
+                            <li class="pdf-item">
+                                <a href="{% url 'pdf_viewer' result.document.pdf_file.name %}?query={{ term_result.term|urlencode }}&count={{ result.count }}" class="pdf-link">{{ result.document.pdf_file.name }}</a> - Word Count: {{ result.count }}
+                                <div class="pdf-content" style="display:none;">{{ result.document.content|safe }}</div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No documents found containing the term "{{ term_result.term }}".</p>
+                {% endif %}
             {% endfor %}
-        </ul>
-    {% else %}
-        <p>No documents found containing your search term.</p>
-    {% endif %}
+        {% else %}
+            <p>No documents found containing your search term.</p>
+        {% endif %}
+    </div>
 </body>
 </html>
