@@ -35,3 +35,10 @@ python manage.py migrate
 
 # 5.Run the development server
 python manage.py runserver
+
+
+# Contribution
+1. Shreyas Pagrut
+2. Vishal Adhav
+3. Shantanu Jaipurkar
+4. Garvit Tanwar
