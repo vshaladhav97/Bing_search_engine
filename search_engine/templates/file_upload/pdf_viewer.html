@@ -3,12 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Viewer with Search Highlight</title>
+    <title>PDF Viewer with Multi-Page Support</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.13.216/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.13.216/pdf.worker.min.js"></script>
     <style>
-        #pdf-canvas {
-            border: 1px solid black; /* Ensure the canvas is visible */
+        #pdf-container {
+            width: 80%;
+            margin: auto;
+            border: 1px solid black; /* Ensures each canvas is visible */
+        }
+        canvas {
+            width: 100%;
+            height: auto;
+            margin-bottom: 20px; /* Space between pages */
         }
         .highlight { background-color: yellow; }
         button[type="submit"], #add-term-btn {
@@ -18,20 +25,20 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            margin: 0 10px;
+            margin: 10px 0;
         }
         button[type="submit"]:hover, #add-term-btn:hover {
             background-color: #45a049;
         }
-    </style>
+    </style>    
 </head>
 <body>
     <h1>PDF Viewer</h1>
-    <a href="/" id="add-term-btn" class="home-button">Home Page</a>
+    <a href="/" id="add-term-btn">Home Page</a>
     <div>PDF URL: {{ pdf_url }}</div> <!-- Display the PDF URL for debugging -->
-    <canvas id="pdf-canvas"></canvas>
+    <div id="pdf-container"></div>
     <script>
-        const url = '{{ pdf_url }}';
+        const url = '{{ pdf_url }}'; // Make sure this is the actual URL to the PDF
         const query = '{{ query|escapejs }}'.toLowerCase();
 
         var pdfjsLib = window['pdfjs-dist/build/pdf'];
@@ -40,48 +47,52 @@
         var loadingTask = pdfjsLib.getDocument(url);
         loadingTask.promise.then(function(pdf) {
             console.log("PDF loaded");
-            
-            // Fetch the first page
-            var pageNumber = 1;
-            pdf.getPage(pageNumber).then(function(page) {
-                console.log("Page loaded");
-                
-                var scale = 1.5;
-                var viewport = page.getViewport({scale: scale});
 
-                // Prepare canvas using PDF page dimensions
-                var canvas = document.getElementById('pdf-canvas');
-                var context = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
+            // Fetch and render all pages
+            for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+                pdf.getPage(pageNumber).then(function(page) {
+                    console.log("Page " + pageNumber + " loaded");
 
-                // Render PDF page into canvas context
-                var renderContext = {
-                    canvasContext: context,
-                    viewport: viewport
-                };
-                var renderTask = page.render(renderContext);
-                renderTask.promise.then(function () {
-                    console.log("Page rendered");
-                    return page.getTextContent();
-                }).then(function(textContent) {
-                    textContent.items.forEach(function(item) {
-                        const termRegex = new RegExp("\\b" + query + "\\b", "gi"); // Use regex to match whole word
-                        if (item.str.toLowerCase().match(termRegex)) {
-                            const tm = item.transform;
-                            const x = tm[4] * scale;
-                            const y = (canvas.height - tm[5] * scale) - (tm[0] * scale);
-                            const textWidth = context.measureText(query).width * scale; // Correct width calculation for the search term
+                    var scale = 1.5;
+                    var viewport = page.getViewport({scale: scale});
 
-                            context.fillStyle = "rgba(255, 255, 0, 0.5)"; // Lighter highlight color
-                            context.fillRect(x, y, textWidth, tm[0] * scale); // Correctly positioned highlight
-                        }
+                    // Prepare a new canvas for each page
+                    var canvas = document.createElement('canvas');
+                    var context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    // Append the canvas to the container
+                    document.getElementById('pdf-container').appendChild(canvas);
+
+                    // Render PDF page into canvas context
+                    var renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
+                    var renderTask = page.render(renderContext);
+                    renderTask.promise.then(function() {
+                        console.log("Page " + pageNumber + " rendered");
+                        return page.getTextContent();
+                    }).then(function(textContent) {
+                        // Highlight search terms after rendering
+                        textContent.items.forEach(function(item) {
+                            const termRegex = new RegExp("\\b" + query + "\\b", "gi");
+                            if (item.str.toLowerCase().match(termRegex)) {
+                                const tm = item.transform;
+                                const x = tm[4] * scale;
+                                const y = (canvas.height - tm[5] * scale) - (tm[0] * scale);
+                                const textWidth = context.measureText(query).width * scale;
+
+                                context.fillStyle = "rgba(255, 255, 0, 0.5)";
+                                context.fillRect(x, y, textWidth, tm[0] * scale);
+                            }
+                        });
                     });
                 });
-            });
-        }, function (reason) {
-            // PDF loading error
-            console.error(reason);
+            }
+        }, function(reason) {
+            console.error("PDF loading error: " + reason);
         });
     </script>
 </body>
